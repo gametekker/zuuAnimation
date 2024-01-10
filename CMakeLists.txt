@@ -16,3 +16,9 @@ add_executable(ZuuGPU main.cpp)
 
 find_package(CUDA REQUIRED)
 target_link_libraries(ZuuGPU PRIVATE start ${CUDA_LIBRARIES})
+
+# Add a custom target for cuda-memcheck
+add_custom_target(memcheck
+    COMMAND cuda-memcheck $<TARGET_FILE:ZuuGPU>
+    DEPENDS ZuuGPU
+)

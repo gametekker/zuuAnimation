@@ -188,6 +188,7 @@ void create_output(int index, cuDoubleComplex* grid, int x, int y, LuminanceColo
     cuDoubleComplex maxv = thrust::reduce(thrust::cuda::par.on(stream), outputs_da.begin(), outputs_da.end(), make_cuDoubleComplex(0, 0), max_complex_mag());
     std::cout<<"compute maximum value"<<std::endl;
 
+    // This doesn't need a dedicated kernel launch
     // Create a device vector to store the 3D results
     thrust::device_vector<thrust::tuple<int, int>> skeleton(x*y);
     // Apply the transformation
@@ -227,6 +228,7 @@ void create_output(int index, cuDoubleComplex* grid, int x, int y, LuminanceColo
     //std::cout<<thrust::get<2>(colored_image_h[0])<<std::endl;
 
     cudaFree(outputs);
+    
 }
 
 void render_single_image(double y0, double yn, double x0, double xn, int resolution, LuminanceColormap cmap, double c1, double c2){
@@ -240,7 +242,7 @@ void render_single_image(double y0, double yn, double x0, double xn, int resolut
     dim3 gridDim (32,32);
     std::cout<<x<<std::endl;
     std::cout<<y<<std::endl;
-    thrust::device_vector<thrust::tuple<double, double, double>> colored_image(x*y);
+    int frames = 10;
 
     //NOTE: initgrid ( ... )
     cuDoubleComplex* grid;
@@ -249,36 +251,80 @@ void render_single_image(double y0, double yn, double x0, double xn, int resolut
     cudaDeviceSynchronize();
     std::cout<<"created complex grid"<<std::endl;
 
-    //int index, cuDoubleComplex* grid, int x, int y, dim3 blockDim, dim3 gridDim, LuminanceColormap cmap, 
-    //thrust::device_vector<thrust::tuple<double,double,double>> colored_image
+    int chunks = 1;
+
+    thrust::device_vector<thrust::tuple<double, double, double>> colored_image(x*y*frames);
+    thrust::host_vector<thrust::tuple<double, double, double>> h_colored_image (x*y*frames*chunks - x*y*frames/2);
+    auto device_ptr = thrust::raw_pointer_cast(colored_image.data());
+    auto host_ptr = thrust::raw_pointer_cast(h_colored_image.data());
+
+
     // Create two streams
     cudaStream_t stream1, stream2;
     cudaStreamCreate(&stream1);
     cudaStreamCreate(&stream2);
 
-    create_output(0, grid, x, y, cmap, OutputFunctor(c1,c2), colored_image, stream1);
-    cudaStreamSynchronize(stream1);
+    for (int cpu_chunk = 0; cpu_chunk < x*y*frames*chunks; cpu_chunk+=x*y*frames){
+        //example: generate a device array of 10 images, while the second half are generating, copy the first half to the host array
+        //FIRST HALF
+        // int cpu chunk
+        if (cpu_chunk!=0){
+            // Get raw pointers from device and host vectors
+            std::cout << "precopy" << std::endl;
 
-    // Retrieve the last error
-    cudaError_t err = cudaGetLastError();
+            // Perform the cudaMemcpy
+            cudaError_t err = cudaMemcpyAsync(
+                host_ptr + cpu_chunk + x*y*frames/2,                 // Destination on host
+                device_ptr + x*y*frames/2,                           // Source on device
+                sizeof(thrust::tuple<double, double, double>) * x * y * frames / 2, // Size of data to copy
+                cudaMemcpyDeviceToHost,                             // Direction of copy
+                stream1                                              // CUDA stream
+            );
 
-    // Check if there was an error
-    if (err != cudaSuccess) {
-        // Print the error message
-        std::cerr << "CUDA error: " << cudaGetErrorString(err) << std::endl;
+            // Check for errors in cudaMemcpy
+            if (err != cudaSuccess) {
+                std::cerr << "cudaMemcpyAsync failed: " << cudaGetErrorString(err) << std::endl;
+            }
+        }
+        for (int i = 0; i < x*y*frames/2; i+=x*y){
+            create_output(i, grid, x, y, cmap, OutputFunctor(c1,c2), colored_image, stream2);
+            //ny implemented: copy second half of prev with stream 1
+        }
+        
+        //SECOND HALF
+        // Get raw pointers from device and host vectors
+        std::cout << "precopy" << std::endl;
+
+        // Perform the cudaMemcpy
+        cudaError_t err = cudaMemcpyAsync(
+            host_ptr + cpu_chunk,                 // Destination on host
+            device_ptr,                           // Source on device
+            sizeof(thrust::tuple<double, double, double>) * x * y * frames / 2, // Size of data to copy
+            cudaMemcpyDeviceToHost,                             // Direction of copy
+            stream2                                              // CUDA stream
+        );
+
+        // Check for errors in cudaMemcpy
+        if (err != cudaSuccess) {
+            std::cerr << "cudaMemcpyAsync failed: " << cudaGetErrorString(err) << std::endl;
+        }
+
+        std::cout << "postcopy" << std::endl;
+
+        for (int i = x*y*frames/2; i < x*y*frames; i+=x*y){
+            create_output(i, grid, x, y, cmap, OutputFunctor(c1,c2), colored_image, stream1);
+        }
+
+        //cudaStreamSynchronize(stream1);
+        //cudaStreamSynchronize(stream2);
+    
     }
 
-    // Copy data from device to host
-    std::cout<<"precopy"<<std::endl;
-    thrust::host_vector<thrust::tuple<double, double, double>> h_colored_image (x*y); 
-    //cudaStreamSynchronize(stream2);
-    thrust::copy(thrust::cuda::par.on(stream2), colored_image.begin(), colored_image.end(), h_colored_image.begin());
-    std::cout<<"postcopy"<<std::endl;
-
+    
     try {
-        auto image_data = prepareImageDataForPNG(h_colored_image, x, y);
+        auto image_data = prepareImageDataForPNG(h_colored_image, x, y*5);
         std::cout<<"making output image"<<std::endl;
-        writePNG("output.png", image_data, x, y);
+        writePNG("output.png", image_data, x, y*5);
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
     }

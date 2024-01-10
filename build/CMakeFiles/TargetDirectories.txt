@@ -1,0 +1,8 @@
+/home/riley/Documents/projs/zuuAnimation/build/CMakeFiles/start.dir
+/home/riley/Documents/projs/zuuAnimation/build/CMakeFiles/ZuuGPU.dir
+/home/riley/Documents/projs/zuuAnimation/build/CMakeFiles/memcheck.dir
+/home/riley/Documents/projs/zuuAnimation/build/CMakeFiles/edit_cache.dir
+/home/riley/Documents/projs/zuuAnimation/build/CMakeFiles/rebuild_cache.dir
+/home/riley/Documents/projs/zuuAnimation/build/colors/CMakeFiles/colors.dir
+/home/riley/Documents/projs/zuuAnimation/build/colors/CMakeFiles/edit_cache.dir
+/home/riley/Documents/projs/zuuAnimation/build/colors/CMakeFiles/rebuild_cache.dir
