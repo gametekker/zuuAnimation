@@ -25,6 +25,20 @@ void LuminanceColormap::generateColormap(const std::vector<std::array<double, 3>
 }
 
 std::array<double, 3> LuminanceColormap::getColor(int colorIdx, int shadeIdx) const {
+    // Adjust colorIdx to ensure it's within the bounds
+    if (colorIdx < 0) {
+        colorIdx = 0;
+    } else if (colorIdx >= static_cast<int>(colormap.size())) {
+        colorIdx = static_cast<int>(colormap.size()) - 1;
+    }
+
+    // Adjust shadeIdx similarly
+    if (shadeIdx < 0) {
+        shadeIdx = 0;
+    } else if (shadeIdx >= shades_for_each_color) {
+        shadeIdx = shades_for_each_color - 1;
+    }
+
     return colormap[colorIdx][shadeIdx];
 }
 

@@ -16,7 +16,7 @@ int main(int argc, char *argv[]){
     double x0 = -2.0;
     double xn = 2.0;
 
-    int resolution = 1000;
+    int resolution = 512; //must be multiple of 32
 
     // Define a simple colormap
     std::vector<std::array<double, 3>> colors = {
@@ -33,7 +33,7 @@ int main(int argc, char *argv[]){
     };
     LuminanceColormap cmap (colors, 10);
 
-    render_single_image(y0,yn,x0,xn,resolution,cmap, std::stod(args[0]), std::stod(args[1]));
+    render_single_image(y0,yn,x0,xn,resolution,cmap, std::stod(args[0]), std::stod(args[1]), 4, 2);
 
 
 

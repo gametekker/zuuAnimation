@@ -14,7 +14,7 @@ unsigned char* convertTo8Bit(double* imagecpu, int width, int height) {
 #include <vector>
 #include <stdexcept>
 
-void writePNG(const char* filename, const std::vector<uint8_t>& image_data, int width, int height) {
+void writePNG(const char* filename, const unsigned char* image_data, int width, int height) {
     FILE* fp = fopen(filename, "wb");
     if (!fp) {
         throw std::runtime_error("Failed to open file for writing");
@@ -41,12 +41,14 @@ void writePNG(const char* filename, const std::vector<uint8_t>& image_data, int 
 
     png_init_io(png_ptr, fp);
 
-    png_set_IHDR(png_ptr, info_ptr, width, height, 8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE,
+    // Set the PNG header information for 24-bit RGB (not RGBA)
+    png_set_IHDR(png_ptr, info_ptr, width, height, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
                  PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 
     std::vector<png_bytep> row_pointers(height);
     for (int y = 0; y < height; y++) {
-        row_pointers[y] = (png_bytep)&image_data[y * width * 4];
+        // Each pixel is 3 bytes (RGB), not 4 (RGBA)
+        row_pointers[y] = (png_bytep)(image_data + y * width * 3);
     }
 
     png_set_rows(png_ptr, info_ptr, row_pointers.data());
@@ -55,4 +57,5 @@ void writePNG(const char* filename, const std::vector<uint8_t>& image_data, int 
     png_destroy_write_struct(&png_ptr, &info_ptr);
     fclose(fp);
 }
+
 
