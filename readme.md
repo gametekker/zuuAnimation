@@ -1,3 +1,8 @@
+# ZuuGPU Project
+
+## Introduction
+ZuuGPU is a project that efficiently generates a series of .png files of the graph of a complex function using CUDA. It leverages GPU computation to create high-performance graphical outputs.
+
 # Compilation
 `cmake -S . -B build`
 `cmake --build build`
