@@ -3,6 +3,13 @@
 ## Introduction
 ZuuGPU is a project that efficiently generates a series of .png files of the graph of a complex function using CUDA. It leverages GPU computation to create high-performance graphical outputs.
 
+the function to be plotted is f(z) = z * (c0)i * z ^ (c1)i
+
+where z is a complex number
+
+- the pixel location in the image corresponds to the input value in the complex plane
+- the pixel brightness corresponds to the magnitude of f(z)
+
 # Compilation
 `cmake -S . -B build`
 `cmake --build build`
@@ -11,7 +18,7 @@ ZuuGPU is a project that efficiently generates a series of .png files of the gra
 
 to run, use command `./build/ZuuGPU 1.0 3.0`
 
-we pass in the coefficients of the complex function (`1.0` `3.0`) as arguments
+we pass in the coefficients of the complex function (c0, c1) = (1.0, 3.0) as arguments
 
 # Current Status
 Very early stages. Capable of generating n frames, but no animation yet.
