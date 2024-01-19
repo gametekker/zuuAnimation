@@ -1578,4 +1578,7 @@ CMakeFiles/start.dir/start.cu.o : /home/riley/Documents/projs/zuuAnimation/start
     /usr/local/cuda-12.3/bin/../targets/x86_64-linux/include/thrust/mr/fancy_pointer_resource.h \
     /usr/local/cuda-12.3/bin/../targets/x86_64-linux/include/thrust/system/cpp/pointer.h \
     /usr/local/cuda-12.3/bin/../targets/x86_64-linux/include/thrust/host_vector.h \
-    /usr/local/cuda-12.3/bin/../targets/x86_64-linux/include/cuComplex.h
+    /usr/local/cuda-12.3/bin/../targets/x86_64-linux/include/cuComplex.h \
+    /usr/include/c++/11/complex \
+    /usr/include/c++/11/sstream \
+    /usr/include/c++/11/bits/sstream.tcc

@@ -10,6 +10,8 @@
 #include <cuComplex.h>
 #include <cuda_runtime.h>
 #include <cuda_device_runtime_api.h>
+#include <complex>
+#include <string>
 
 __device__ cuDoubleComplex cuCcos(cuDoubleComplex z) {
     double x = cuCreal(z);
@@ -121,46 +123,52 @@ char convertToCharColor(const double rgbArray[3]) {
     // Here, we are packing them into a single char, which is a simple representation.
     return static_cast<char>((red << 16) | (green << 8) | blue);
 }
+__global__ void ComplexToRGBKernel(const cuDoubleComplex* input, unsigned char* output, int size, int run_idx) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < size) {
+        const cuDoubleComplex& c = input[run_idx+idx];
+        double magnitude = cuCabs(c);
+        unsigned char intensity = static_cast<unsigned char>(magnitude * 255.0 / 10.0); // Example scaling
 
-unsigned char* prepareImageDataForPNG(cuDoubleComplex* h_colored_image, int x, int y, int frames, int chunks, LuminanceColormap cmap, bool old, double vmax, int divX, int divY){
-    unsigned char* ca = (unsigned char*) malloc(3*x*y*frames*chunks*sizeof(char));
-    for (int image = 0; image < x*y*frames*chunks; image+= x*y){
-        for (int i = 0; i < x*y; i++){
-            cuDoubleComplex z = h_colored_image[image+i];
-            int cx;
-            int cy;
-            if (old){
-                double magnitude;
-                double phase;
-                // Assuming z is your cuDoubleComplex variable
-                double a = cuCreal(z); // Real part of z
-                double b = cuCimag(z); // Imaginary part of z
-                // Calculate magnitude
-                magnitude = sqrt(a * a + b * b);
-                // Calculate phase
-                phase = atan2(b, a);
-                if (phase < 0){
-                    phase+=2*M_PI;
-                }
-                find_bin_index(2*M_PI, vmax, divX, divY, phase, magnitude, cx, cy);
-            }
-            else{
-                cx = cuCreal(z);
-                cy = cuCreal(z);
-            }
-            std::array<double,3> color = cmap.getColor(cx, cy);
-            
-            // Assuming that color components are in the range [0.0, 1.0]
-            // and need to be scaled to [0, 255]
-            ca[(image + i) * 3 + 0] = static_cast<unsigned char>(color[0] * 255.0);
-            ca[(image + i) * 3 + 1] = static_cast<unsigned char>(color[1] * 255.0);
-            ca[(image + i) * 3 + 2] = static_cast<unsigned char>(color[2] * 255.0);
-        }
+        // Compute the output index considering the run_idx offset
+        int outputIdx = (run_idx + idx) * 3;
+        output[outputIdx] = intensity;     // Red channel
+        output[outputIdx + 1] = intensity; // Green channel
+        output[outputIdx + 2] = intensity; // Blue channel
     }
-    return ca;
 }
 
-void render_single_image(double y0, double yn, double x0, double xn, int resolution, LuminanceColormap cmap, double c1, double c2, int frames, int chunks){
+__global__ void ComplexToRGBKerneli(const cuDoubleComplex* input, int* output, int x, int y, int run_idx) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+    if (i < x && j < y) {
+        const cuDoubleComplex& c = input[run_idx + i + j*x];
+        double magnitude = cuCabs(c);
+        int intensity = (int)(magnitude * 255.0 / 10.0); // Example scaling
+
+        // Compute the output index considering the run_idx offset
+        int outputIdx = (run_idx + i + j*x) * 3;
+        output[outputIdx] = intensity;     // Red channel
+        output[outputIdx + 1] = intensity; // Green channel
+        output[outputIdx + 2] = intensity; // Blue channel
+    }
+}
+
+void render_single_image(double y0, double yn, double x0, double xn, int resolution, LuminanceColormap cmap, double c1, double c2, int chunks){
+    cudaDeviceProp prop;
+    int device;
+    cudaGetDevice(&device); // Get the current device
+    cudaGetDeviceProperties(&prop, device);
+
+    std::cout << "Device Name: " << prop.name << std::endl;
+    std::cout << "Compute Capability: " << prop.major << "." << prop.minor << std::endl;
+
+    if (prop.deviceOverlap) {
+        std::cout << "Device supports concurrent kernel execution and memory transfers." << std::endl;
+    } else {
+        std::cout << "Device does not support concurrent kernel execution and memory transfers." << std::endl;
+    }
+
     std::cout << "starting program" << std::endl;
 
     // Array bounds
@@ -177,71 +185,62 @@ void render_single_image(double y0, double yn, double x0, double xn, int resolut
     std::cout << "created complex grid" << std::endl;
 
     // Allocate memory for colored_image on device
-    cuDoubleComplex* device_colored_image;
-    cudaMalloc(&device_colored_image, x * y * frames * sizeof(cuDoubleComplex));
+    cuDoubleComplex* function_out_dev;
+    cudaMalloc(&function_out_dev, x*y*2*sizeof(cuDoubleComplex));
 
-    // Allocate memory for colored_image on host
-    cuDoubleComplex* host_colored_image = new cuDoubleComplex[x * y * frames * chunks];
+    int* image_data_dev;
+    cudaMalloc(&image_data_dev, x*y*3*2*sizeof(int));
+    int* host_image_data = new int[x*y*3*2];
 
     // Create two streams
     cudaStream_t stream1, stream2;
     cudaStreamCreate(&stream1);
     cudaStreamCreate(&stream2);
 
-    for (int cpu_chunk = 0; cpu_chunk < x * y * frames * chunks; cpu_chunk += x * y * frames) {
-        // Process first half
-        if (cpu_chunk != 0) {
-            std::cout << "precopyx" << std::endl;
-            cudaMemcpyAsync(host_colored_image + cpu_chunk + x * y * frames / 2, 
-                            device_colored_image + x * y * frames / 2, 
-                            sizeof(cuDoubleComplex) * x * y * frames / 2, 
-                            cudaMemcpyDeviceToHost, 
-                            stream1);
+    // Create a CUDA event
+    //outputs are [c1,c2,c3,c4, ...]
+ 
+    for (int chunk = 0; chunk < chunks+2; ++chunk) {
+        
+        int run_idx;
+        int load_idx;
+        if (chunk%2 == 0){
+            run_idx=0;
+            load_idx=x*y;
+        } else {
+            run_idx=x*y;
+            load_idx=0;
         }
 
-        for (int i = 0; i < x * y * frames / 2; i += x * y) {
-            create_output<<<blockDim, gridDim, 0, stream2>>>(x, y, grid, device_colored_image, i, c1, c2);
+        if (chunk < chunks-2){
+            create_output<<<blockDim, gridDim, 0, stream1>>>(x, y, grid, function_out_dev, run_idx, c1, c2);
+            ComplexToRGBKerneli<<<blockDim, gridDim, 0, stream1>>>(function_out_dev, image_data_dev, x, y, run_idx);
+        }
+        if (chunk >= 1 && chunk < chunks-1){
+            cudaMemcpyAsync(host_image_data + load_idx*3, 
+                image_data_dev + load_idx*3, 
+                sizeof(int) * x*y*3, 
+                cudaMemcpyDeviceToHost, 
+                stream2);
+        }
+        if (chunk >= 2){
+            std::cout<<host_image_data[run_idx*3]<<std::endl;
+            std::cout<<host_image_data[run_idx*3 + x*y-1]<<std::endl;
+            std::string name = "output"+std::to_string(chunk-2)+".png";
+            writePNG(name.c_str(), host_image_data, x, y, x*y);
         }
 
-        // Process second half
-        std::cout << "precopy" << std::endl;
-        cudaMemcpyAsync(host_colored_image + cpu_chunk, 
-                        device_colored_image, 
-                        sizeof(cuDoubleComplex) * x * y * frames / 2, 
-                        cudaMemcpyDeviceToHost, 
-                        stream2);
-
-        std::cout << "postcopy" << std::endl;
-        for (int i = x * y * frames / 2; i < x * y * frames; i += x * y) {
-            create_output<<<blockDim, gridDim, 0, stream1>>>(x, y, grid, device_colored_image, i, c1, c2);
-        }
-    }
-    std::cout << "precopyx" << std::endl;
-            cudaMemcpyAsync(host_colored_image + x * y * frames * chunks - x * y * frames / 2, 
-                            device_colored_image + x * y * frames / 2, 
-                            sizeof(cuDoubleComplex) * x * y * frames / 2, 
-                            cudaMemcpyDeviceToHost, 
-                            stream1);
-
-    cudaStreamSynchronize(stream1);
-    cudaStreamSynchronize(stream2);
-    cudaStreamDestroy(stream1);
-    cudaStreamDestroy(stream2);
-
-    try {
-        std::cout<<"now done"<<std::endl;
-        std::cout<<"(-2,-2)" <<cuCreal(host_colored_image[0])<<","<<cuCimag(host_colored_image[0])<<std::endl;
-        std::cout<<"(-2,-2)" <<cuCreal(host_colored_image[x*y])<<","<<cuCimag(host_colored_image[x*y])<<std::endl;
-        std::cout<<"(2,2)" <<cuCreal(host_colored_image[x*y-1])<<","<<cuCimag(host_colored_image[x*y-1])<<std::endl;
-        auto image_data = prepareImageDataForPNG(host_colored_image, x, y, frames, chunks, cmap, true, 40000, cmap.getShape().first, cmap.getShape().second);
-        std::cout << "making output image" << std::endl;
-        writePNG("output.png", image_data, x, y * frames * chunks);
-    } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        cudaStreamSynchronize(stream1);
+        cudaStreamSynchronize(stream2);
     }
 
     // Clean up
+    cudaStreamDestroy(stream1);
+    cudaStreamDestroy(stream2);
+
+    // Clean up
     cudaFree(grid);
-    cudaFree(device_colored_image);
-    delete[] host_colored_image;
+    cudaFree(function_out_dev);
+    cudaFree(image_data_dev);
+    delete[] host_image_data;
 }

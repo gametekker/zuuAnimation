@@ -1,5 +1,6 @@
 #include "start.hpp"
 #include "pngUtils.hpp"
+#include "pngUtils.hpp"
 
 int main(int argc, char *argv[]){
 
@@ -33,7 +34,7 @@ int main(int argc, char *argv[]){
     };
     LuminanceColormap cmap (colors, 10);
 
-    render_single_image(y0,yn,x0,xn,resolution,cmap, std::stod(args[0]), std::stod(args[1]), 4, 2);
+    render_single_image(y0,yn,x0,xn,resolution,cmap, std::stod(args[0]), std::stod(args[1]), 10);
 
 
 

@@ -1581,8 +1581,13 @@ CMakeFiles/start.dir/start.cu.o: ../start.cu \
   /usr/local/cuda-12.3/targets/x86_64-linux/include/thrust/mr/fancy_pointer_resource.h \
   /usr/local/cuda-12.3/targets/x86_64-linux/include/thrust/system/cpp/pointer.h \
   /usr/local/cuda-12.3/targets/x86_64-linux/include/thrust/host_vector.h \
-  /usr/local/cuda-12.3/targets/x86_64-linux/include/cuComplex.h
+  /usr/local/cuda-12.3/targets/x86_64-linux/include/cuComplex.h \
+  /usr/include/c++/11/complex \
+  /usr/include/c++/11/sstream \
+  /usr/include/c++/11/bits/sstream.tcc
 
+
+/usr/include/c++/11/sstream:
 
 /usr/local/cuda-12.3/targets/x86_64-linux/include/thrust/system/cpp/pointer.h:
 
@@ -3034,6 +3039,8 @@ CMakeFiles/start.dir/start.cu.o: ../start.cu \
 
 /usr/local/cuda-12.3/targets/x86_64-linux/include/sm_32_intrinsics.hpp:
 
+/usr/include/c++/11/complex:
+
 /usr/local/cuda-12.3/targets/x86_64-linux/include/cub/warp/warp_scan.cuh:
 
 /usr/local/cuda-12.3/targets/x86_64-linux/include/thrust/detail/vector_base.h:
@@ -3145,6 +3152,8 @@ CMakeFiles/start.dir/start.cu.o: ../start.cu \
 /usr/local/cuda-12.3/targets/x86_64-linux/include/cuda/std/detail/libcxx/include/__type_traits/is_convertible.h:
 
 /usr/local/cuda-12.3/targets/x86_64-linux/include/thrust/detail/config/host_device.h:
+
+/usr/include/c++/11/bits/sstream.tcc:
 
 /usr/local/cuda-12.3/targets/x86_64-linux/include/cuda/std/detail/libcxx/include/__cuda/cstdint_prelude.h:
 

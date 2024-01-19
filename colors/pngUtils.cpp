@@ -14,7 +14,7 @@ unsigned char* convertTo8Bit(double* imagecpu, int width, int height) {
 #include <vector>
 #include <stdexcept>
 
-void writePNG(const char* filename, const unsigned char* image_data, int width, int height) {
+void writePNG(const char* filename, const int* rgb_data, int width, int height, int offset) {
     FILE* fp = fopen(filename, "wb");
     if (!fp) {
         throw std::runtime_error("Failed to open file for writing");
@@ -45,10 +45,19 @@ void writePNG(const char* filename, const unsigned char* image_data, int width, 
     png_set_IHDR(png_ptr, info_ptr, width, height, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
                  PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 
+    // Allocate temporary memory for converted data
+    std::vector<unsigned char> temp_data(width * height * 3);
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            for (int c = 0; c < 3; ++c) {
+                temp_data[(y * width + x) * 3 + c] = static_cast<unsigned char>(rgb_data[(offset + y * width + x) * 3 + c]);
+            }
+        }
+    }
+
     std::vector<png_bytep> row_pointers(height);
-    for (int y = 0; y < height; y++) {
-        // Each pixel is 3 bytes (RGB), not 4 (RGBA)
-        row_pointers[y] = (png_bytep)(image_data + y * width * 3);
+    for (int y = 0; y < height; ++y) {
+        row_pointers[y] = &temp_data[y * width * 3];
     }
 
     png_set_rows(png_ptr, info_ptr, row_pointers.data());
