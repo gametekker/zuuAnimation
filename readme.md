@@ -1,7 +1,7 @@
-# ZuuGPU Project
+# ZuuAnimation Project
 
 ## Introduction
-ZuuGPU is a project that efficiently generates a series of .png files of the graph of a complex function using CUDA. It leverages GPU computation to create high-performance graphical outputs.
+ZuuAnimation is a project that efficiently generates a series of .png files of the graph of a complex function using CUDA. It leverages GPU computation to create high-performance graphical outputs.
 
 the function to be plotted is f(z) = z * (c0)i * z ^ (c1)i
 
