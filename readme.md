@@ -8,7 +8,6 @@ ZuuGPU is a project that efficiently generates a series of .png files of the gra
 `cmake --build build`
 
 # Example Usage
-note: this is a work in progress
 
 to run, use command `./build/ZuuGPU 1.0 3.0`
 
