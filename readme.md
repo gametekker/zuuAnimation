@@ -5,7 +5,7 @@
 # Example Usage
 note: this is a work in progress
 to run, use command `./build/ZuuGPU 1.0 3.0`
-we pass in the coefficients of the complex function as arguments
+we pass in the coefficients of the complex function (`1.0` `3.0`) as arguments
 
 # Current Status
 Very early stages. Capable of generating n frames, but no animation yet.
