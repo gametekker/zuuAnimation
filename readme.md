@@ -10,6 +10,8 @@ where z is a complex number
 - the pixel location in the image corresponds to the input value in the complex plane
 - the pixel brightness corresponds to the magnitude of f(z)
 
+![Alt Text](https://github.com/gametekker/zuuAnimation/blob/simplify/out.png)
+
 # Compilation
 `cmake -S . -B build`
 `cmake --build build`
@@ -30,7 +32,4 @@ This project currently does the following concurrently using CUDA streams for ea
 
 # Next Steps
 - Implement coefficient changes every frame to produce an animated output.
-
-![Alt Text](https://github.com/gametekker/zuuAnimation/blob/simplify/out.png)
-
 
