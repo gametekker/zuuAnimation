@@ -1,2 +1,0 @@
-/usr/bin/ar qc libcolors.a CMakeFiles/colors.dir/LuminanceColormap.cpp.o CMakeFiles/colors.dir/pngUtils.cpp.o
-/usr/bin/ranlib libcolors.a

@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/ZuuGPU.dir/main.cpp.o -o ZuuGPU   -L/usr/local/cuda-12.3/targets/x86_64-linux/lib/stubs  -L/usr/local/cuda-12.3/targets/x86_64-linux/lib  libstart.a /usr/local/cuda-12.3/lib64/libcudart_static.a -ldl /usr/lib/x86_64-linux-gnu/librt.a colors/libcolors.a -lpng -lcudadevrt -lcudart_static -lrt -lpthread -ldl 

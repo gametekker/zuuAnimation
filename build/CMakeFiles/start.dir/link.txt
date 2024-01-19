@@ -1,2 +1,0 @@
-/usr/bin/ar qc libstart.a CMakeFiles/start.dir/start.cu.o
-/usr/bin/ranlib libstart.a
