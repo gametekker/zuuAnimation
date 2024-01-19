@@ -23,5 +23,8 @@ This project currently does the following concurrently using CUDA streams for ea
 - create `.png` file of that graph
 
 # Next Steps
-Have the function coefficients change every frame to give output animated look.
+- Implement coefficient changes every frame to produce an animated output.
+
+![Alt Text](https://github.com/gametekker/zuuAnimation/blob/simplify/out.png)
+
 
