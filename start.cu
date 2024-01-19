@@ -13,6 +13,8 @@
 #include <complex>
 #include <string>
 
+// MATH FUNCTIONS
+
 __device__ cuDoubleComplex cuCcos(cuDoubleComplex z) {
     double x = cuCreal(z);
     double y = cuCimag(z);
