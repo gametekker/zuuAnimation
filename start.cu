@@ -154,7 +154,7 @@ __global__ void ComplexToRGBKerneli(const cuDoubleComplex* input, int* output, i
     }
 }
 
-void render_single_image(double y0, double yn, double x0, double xn, int resolution, LuminanceColormap cmap, double c1, double c2, int chunks){
+void render_frames(double y0, double yn, double x0, double xn, int resolution, double c1, double c2, int chunks){
     cudaDeviceProp prop;
     int device;
     cudaGetDevice(&device); // Get the current device
